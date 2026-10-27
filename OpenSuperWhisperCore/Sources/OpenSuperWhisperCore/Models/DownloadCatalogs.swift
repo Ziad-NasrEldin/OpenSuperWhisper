@@ -124,6 +124,13 @@ public struct SettingsFluidAudioModels {
     /// Best first: the menus and the model list show them in this order.
     public static let availableModels = [
         SettingsFluidAudioModel(
+            name: "Bark 3.0 Pro",
+            version: BarkModel.version,
+            isDownloaded: false,
+            description: "English-only, Parakeet v3 derivative, installed by hand in ~/Models/bark-3.0-pro",
+            size: 1250
+        ),
+        SettingsFluidAudioModel(
             name: "Parakeet Ultra",
             version: "ultra",
             isDownloaded: false,

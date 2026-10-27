@@ -62,8 +62,9 @@ final class StreamingTranscriptionController: ObservableObject {
         volatileText = ""
 
         let versionString = AppPreferences.shared.fluidAudioModelVersion
-        let version = AsrModelVersion(preference: versionString)
-        let models = try await AsrModels.downloadAndLoad(version: version)
+        let models = versionString == BarkModel.version
+            ? try BarkModel.loadModels()
+            : try await AsrModels.downloadAndLoad(version: AsrModelVersion(preference: versionString))
 
         // Small windows so a rough preview appears quickly (the default 11–15s window emits
         // nothing for short dictations). First text lands at ~chunk+right ≈ 1.8s, then ~every

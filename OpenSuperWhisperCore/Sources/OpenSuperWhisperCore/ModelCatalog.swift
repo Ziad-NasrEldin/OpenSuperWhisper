@@ -21,6 +21,10 @@ public enum ModelCatalog {
     /// aren't on disk, since the menu must never trigger a download.
     public static func parakeetModels() -> [DictationModelOption] {
         SettingsFluidAudioModels.availableModels.compactMap { model in
+            if model.version == BarkModel.version {
+                guard BarkModel.isInstalled else { return nil }
+                return DictationModelOption(engine: "fluidaudio", identifier: model.version, displayName: model.name)
+            }
             let version = AsrModelVersion(preference: model.version)
             let cache = AsrModels.defaultCacheDirectory(for: version)
             guard AsrModels.modelsExist(at: cache, version: version) else { return nil }

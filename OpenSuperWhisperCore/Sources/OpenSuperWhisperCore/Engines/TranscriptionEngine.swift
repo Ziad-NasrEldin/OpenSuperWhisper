@@ -73,7 +73,7 @@ public enum EngineCapabilities {
         case "sensevoice":
             return ["auto", "zh", "en", "ja", "ko", "yue"]
         case "fluidaudio":
-            return fluidAudioModelVersion == "v2"
+            return fluidAudioModelVersion == "v2" || fluidAudioModelVersion == BarkModel.version
                 ? ["en"]
                 : ["en", "de", "es", "fr", "it", "pt", "ru", "pl", "nl", "tr", "cs", "ar", "zh", "ja",
                    "hu", "fi", "hr", "sk", "sr", "sl", "uk", "ca", "da", "el", "bg"]

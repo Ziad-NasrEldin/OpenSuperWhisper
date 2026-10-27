@@ -1207,6 +1207,9 @@ class SettingsViewModel: ObservableObject {
     }
     
     func isFluidAudioModelDownloaded(version: String) -> Bool {
+        if version == BarkModel.version {
+            return BarkModel.isInstalled
+        }
         let asrVersion = AsrModelVersion(preference: version)
         
         // Используем правильный путь к кэшу согласно документации:
@@ -1338,6 +1341,11 @@ class SettingsViewModel: ObservableObject {
     @MainActor
     func downloadFluidAudioModel(_ model: SettingsFluidAudioModel) async throws {
         guard !isDownloading else { return }
+        guard model.version != BarkModel.version else {
+            throw NSError(domain: "OpenSuperWhisper", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Bark 3.0 Pro is not downloaded by the app. Put the coreml folder of huggingface.co/ConwayResearch/Underdog-Bark-3.0-Pro at \(BarkModel.directory.path)."
+            ])
+        }
         
         isDownloading = true
         downloadingModelName = model.name

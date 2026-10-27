@@ -11,7 +11,7 @@ class FluidAudioEngine: TranscriptionEngine {
     private var transcriptionTask: Task<String, Error>?
     private var progressTask: Task<Void, Never>?
 
-    /// When set ("v2", "v3" or "ultra"), overrides the pref-selected model version — lets the
+    /// When set ("v2", "v3", "ultra" or "bark3"), overrides the pref-selected model version — lets the
     /// remote local-fallback build an engine for a specific model without mutating
     /// global prefs. Readable so a test can check what the fallback factory passed.
     let versionOverride: String?
@@ -22,15 +22,22 @@ class FluidAudioEngine: TranscriptionEngine {
     
     var onProgressUpdate: ((Float) -> Void)?
     
+    /// Bark is read from its own folder and wants leading silence before the audio.
+    private var isBark = false
+
     var isModelLoaded: Bool {
         asrManager != nil
     }
     
     func initialize() async throws {
         let versionString = versionOverride ?? CoreAccess.preferences.fluidAudioModelVersion
-        let version = AsrModelVersion(preference: versionString)
-
-        let models = try await AsrModels.downloadAndLoad(version: version)
+        let models: AsrModels
+        if versionString == BarkModel.version {
+            models = try BarkModel.loadModels()
+            isBark = true
+        } else {
+            models = try await AsrModels.downloadAndLoad(version: AsrModelVersion(preference: versionString))
+        }
         let manager = AsrManager(config: .default)
         try await manager.loadModels(models)
 
@@ -87,7 +94,10 @@ class FluidAudioEngine: TranscriptionEngine {
         // FluidAudio's own batch transcription does (#235). They used to send the file through
         // the sliding-window decoder instead, which reloaded every model on each dictation.
         let boostTerms = activeBoostTerms(settings)
-        let samples = try await Self.samplesIfNeeded(url: url, forBoosting: !boostTerms.isEmpty)
+        var samples = try await Self.samplesIfNeeded(url: url, forBoosting: !boostTerms.isEmpty || isBark)
+        if isBark, let audio = samples {
+            samples = Array(repeating: Float(0), count: BarkModel.leadingSilenceSamples) + audio
+        }
         // A fresh TDT decoder state per file keeps transcriptions independent.
         var decoderState = TdtDecoderState.make(decoderLayers: await asrManager.decoderLayerCount)
         let result = if let samples {
@@ -183,6 +193,7 @@ class FluidAudioEngine: TranscriptionEngine {
     /// (`QuietClipGain`); any other keeps FluidAudio's reader, which streams long files from disk.
     ///
     /// Boosting always needs the samples: the rescorer reads the audio behind the transcript.
+    /// Bark always needs the samples, to add its leading silence.
     private static func samplesIfNeeded(url: URL, forBoosting: Bool) async throws -> [Float]? {
         let isMultiChannel = try AVAudioFile(forReading: url).processingFormat.channelCount > 1
         guard try forBoosting || isMultiChannel || AudioPCMConverter.staysBelowNormalLevel(url) else { return nil }
