@@ -91,6 +91,22 @@ public class TranscriptionService: ObservableObject {
         isLoading = false
     }
 
+    /// Loads Bark ahead of the first dictation. Bark is installed by hand, so this never
+    /// downloads anything, and its first load (Neural Engine preparation) can take seconds
+    /// that would otherwise land on the user's first dictation after launch.
+    public func preloadLocalModelIfSelected() {
+        guard CoreAccess.preferences.selectedEngine == "fluidaudio",
+              CoreAccess.preferences.fluidAudioModelVersion == BarkModel.version,
+              BarkModel.isInstalled else { return }
+        Task {
+            // Through the gate, so a dictation started meanwhile waits for this load
+            // instead of starting a second one.
+            await Self.engineGate.wait()
+            await ensureEngineLoaded()
+            await Self.engineGate.signal()
+        }
+    }
+
     /// The engines `ensureEngineLoaded` can build. Named apart from the classes so the choice can
     /// be made, and tested, without instantiating anything (an engine's init may load a model).
     enum EngineKind: Equatable {

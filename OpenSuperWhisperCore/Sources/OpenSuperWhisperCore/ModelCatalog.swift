@@ -127,6 +127,7 @@ public enum ModelCatalog {
         // reloadEngine() is @MainActor-isolated on TranscriptionService.
         Task { @MainActor in
             TranscriptionService.shared.reloadEngine()
+            TranscriptionService.shared.preloadLocalModelIfSelected()
         }
         // AppPreferences is the source of truth for the active model; tell any open
         // Settings window to reflect this change (it caches its own @Published copies).

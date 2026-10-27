@@ -186,6 +186,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, ObservableOb
         OpenSuperWhisperApp.startTranscriptionQueue()
         OpenSuperWhisperApp.startRetentionScheduler()
         OpenSuperWhisperApp.preloadCleanupModel()
+        MainActor.assumeIsolated { TranscriptionService.shared.preloadLocalModelIfSelected() }
         AgentBridge.registerRunningApp()
         AgentInbox.shared.start()
         observeMicrophoneChanges()
